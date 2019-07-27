@@ -57,11 +57,9 @@ public class Quantification {
 			x = new BigInteger(String.valueOf(m_YTable[j]));
 			break;
 		case 1:
-//			x = new BigInteger(String.valueOf(m_CbCrTable[j]));
 			x = new BigInteger(String.valueOf(m_YTable[j]));
 			break;
 		case 2:
-//			x = new BigInteger(String.valueOf(m_CbCrTable[j]));
 			x = new BigInteger(String.valueOf(m_YTable[j]));
 			break;
 		default:
@@ -85,11 +83,9 @@ public class Quantification {
 			x = new BigInteger(String.valueOf(m_YTable[j]));
 			break;
 		case 1:
-//			x = new BigInteger(String.valueOf(m_CbCrTable[j]));
 			x = new BigInteger(String.valueOf(m_YTable[j]));
 			break;
 		case 2:
-//			x = new BigInteger(String.valueOf(m_CbCrTable[j]));
 			x = new BigInteger(String.valueOf(m_YTable[j]));
 			break;
 		default:

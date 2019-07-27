@@ -11,7 +11,7 @@ import java.math.BigInteger;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Random;
-//import java.util.Scanner;
+import java.util.Scanner;
 
 import supplement.Paillier;
 import supplement.PublicKey;
@@ -41,14 +41,14 @@ public class No_window_server_pk {
 
 	public static void main(String[] args) throws Exception {
 
+		System.out.println(">>> Server PK started! <<<");
+
 		server_pk_ip = "127.0.0.1";
 		server_pk_port = "44444";
 		server_sk_ip = "127.0.0.1";
 		server_sk_port = "55555";
-		client_ip = "127.0.0.1";
-		client_port = "33333";
 
-//		Scanner in = new Scanner(System.in);
+		Scanner in = new Scanner(System.in);
 //		System.out.println("Please input Server PK's ip(default 127.0.0.1):");
 //		server_pk_ip = in.nextLine();
 //		System.out.println("Please input Server PK's port(default 44444):");
@@ -57,13 +57,12 @@ public class No_window_server_pk {
 //		server_sk_ip = in.nextLine();
 //		System.out.println("Please input Server SK's port(default 55555):");
 //		server_sk_port = in.nextLine();
-//		System.out.println("Please input Client's ip(default 127.0.0.1):");
-//		client_ip = in.nextLine();
-//		System.out.println("Please input Client's port(default 33333):");
-//		client_port = in.nextLine();
-//		in.close();
+		in.close();
 
 		p = new Paillier();
+
+		client_ip = "127.0.0.1";
+		client_port = "33333";
 
 		ServerSocket server = new ServerSocket(Integer.valueOf(server_pk_port));
 		while (true) {
@@ -71,60 +70,54 @@ public class No_window_server_pk {
 			ObjectInputStream is = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
 			int cmd = is.readInt();
 			if (cmd == 0) {
-				System.out.println("[*] Receiving EI2 from Client...");
+				System.out.println(">>> Receiving EI2 from Client... <<<");
 				Object obj = is.readObject();
 				EI2 = (BigInteger[][]) obj;
-//				for (int i = 0; i < EI2.length; i++) {
-//					for (int j = 0; j < EI2[0].length; j++) {
-//						System.out.print(EI2[i][j] + " ");
-//					}
-//					System.out.println();
-//				}
-//				System.out.println();
-				System.out.println("[*] Receiving Compeleted!");
+				System.out.println(">>> Receiving Compeleted! <<<");
 
-				System.out.println("[*] Receiving PK from Client...");
+				System.out.println(">>> Receiving PK from Client... <<<");
 				obj = is.readObject();
 				PK = (PublicKey) obj;
-				System.out.println("[*] Receiving Compeleted!");
+				System.out.println(">>> Receiving Compeleted! <<<");
 			}
 
 			if (cmd == 1) {
-				System.out.println("[*] Receiving EI1 from Server SK...");
+				System.out.println(">>> Receiving EI1 from Server SK... <<<");
 				Object obj = is.readObject();
 				EI1 = (BigInteger[][]) obj;
-				System.out.println("[*] I1 was received from Server SK successfully!");
+				System.out.println(">>> I1 was received from Server SK successfully! <<<");
 
+				System.out.println(">>> Start calculate... <<<");
+				long calculateStartTime = System.currentTimeMillis();
 				EI = GetEI.calEI(EI1, EI2, PK);
+				long calculateEndTime = System.currentTimeMillis();
+				System.out.println("[*] Calculating takes " + (calculateEndTime - calculateStartTime) + "ms");
 
+				System.out.println(">>> Start spilit bmp file... <<<");
 				long spilitStartTime = System.currentTimeMillis();
 				Images = Spilit.spilitBMP(EI);
 				long spilitEndTime = System.currentTimeMillis();
 				System.out.println("[*] Spilit takes " + (spilitEndTime - spilitStartTime) + "ms");
 
+				System.out.println(">>> Start convert colorspace... <<<");
 				long convertStartTime = System.currentTimeMillis();
 				YUVarr = convertTo1D(ConvertColorspace.convertRGB2YUV(Images, PK));
 				long convertEndTime = System.currentTimeMillis();
 				System.out.println("[*] Convert colorspace takes " + (convertEndTime - convertStartTime) + "ms");
 
+				System.out.println(">>> Start DCT... <<<");
 				long dctStartTime = System.currentTimeMillis();
-				System.out.println("[*] Start DCT...");
 				dctArr = new BigInteger[YUVarr.length][3][64];
-				System.out.println("[+] n = " + PK.n);
 				for (int i = 0; i < YUVarr.length; i++) {
 					for (int m = 0; m < 3; m++) {
 						dctArr[i][m] = ForwardDCT.forwardDCT(YUVarr[i][m], PK);
 					}
 				}
-//				for (int i = 0; i < dctArr.length; i++) {
-//					printArray(dctArr[i]);
-//				}
-				System.out.println("[*] Finish DCT!");
 				long dctEndTime = System.currentTimeMillis();
 				System.out.println("[*] DCT takes " + (dctEndTime - dctStartTime) + "ms");
 
-				long quanlificationStartTime = System.currentTimeMillis();
-				System.out.println("[*] Sending DCT Array to Server SK and start Quanlification...");
+				long quantificationStartTime = System.currentTimeMillis();
+				System.out.println(">>> Sending DCT Array to Server SK and start Quantification... <<<");
 				int quality_scale = 50;
 				Quantification.initQualityTables(quality_scale);
 
@@ -140,24 +133,19 @@ public class No_window_server_pk {
 				temp_os.flush();
 
 				quanArr = new BigInteger[dctArr.length][3][64];
-				System.out.println("[-] Delay times = " + (dctArr.length * 3 * 64));
+//				System.out.println("[+] Delay time = " + (dctArr.length * 3 * 64 * 5) + "ms");
 				Random r = new Random();
 				BigInteger rData = null;
 
 				for (int i = 0; i < dctArr.length; i++) {
 					for (int m = 0; m < 3; m++) {
 						for (int j = 0; j < 64; j++) {
-							Thread.sleep(10);
+							Thread.sleep(5);
 
 							int rd = r.nextInt(Integer.MAX_VALUE);
-//							rd = 1;
 
 							BigInteger src = dctArr[i][m][j];
-//							BigInteger src = p.En(PK, dctArr[i][m][j]);
-//							src = p.cipher_mul(PK, src, new BigInteger("1000000000000"));
 							rData = p.cipher_mul(PK, src, new BigInteger(String.valueOf(rd)));
-
-//							System.out.println("Send " + i + " " + m + " " + j);
 
 							bw.write(rData.toString());
 							bw.newLine();
@@ -170,11 +158,10 @@ public class No_window_server_pk {
 							String flag = "";
 
 							BigInteger res = null;
-							BigInteger remain = null;
+							BigInteger remain = BigInteger.ZERO;
 
 							for (int l = 0; l < 2048 / 16; l++) {
 								rd = r.nextInt(Integer.MAX_VALUE);
-//								rd = 1;
 								for (int k = 0; k < 16; k++) {
 									n = new BigInteger(String.valueOf(16 * l + k));
 									data = Quantification.calculate(src, n, m, j, sig, PK);
@@ -199,7 +186,6 @@ public class No_window_server_pk {
 
 							remain = remain.divide(new BigInteger("1000000000000"));
 							remain = remain.divide(new BigInteger(String.valueOf(rd)));
-//							System.out.println("remain = " + remain);
 
 							if (Quantification.judge(remain, m, j)) {
 								res = p.cipher_add(PK, res, p.En(PK, BigInteger.ONE));
@@ -214,11 +200,12 @@ public class No_window_server_pk {
 					}
 				}
 				temp.close();
-				long quanlificationEndTime = System.currentTimeMillis();
+				long quantificationEndTime = System.currentTimeMillis();
 				System.out.println(
-						"[*] Quanlification takes " + (quanlificationEndTime - quanlificationStartTime) + "ms");
+						"[*] Quantification takes " + (quantificationEndTime - quantificationStartTime) + "ms");
 
-				System.out.println("[*] Sending Quantification Array and some infos to Client...");
+				Thread.sleep(100);
+				System.out.println(">>> Sending Quantification Array and some infos to Client... <<<");
 				temp = new Socket(client_ip, Integer.valueOf(client_port));
 				temp_os = new ObjectOutputStream(temp.getOutputStream());
 				temp_os.writeInt(0);
@@ -228,14 +215,11 @@ public class No_window_server_pk {
 				temp_os.writeObject(quanArr);
 				temp_os.flush();
 				temp.close();
-				System.out.println("[*] Quantification Array and some infos was sent to Client successfully!");
-
+				System.out.println(">>> Quantification Array and some infos was sent to Client successfully! <<<");
 			}
 
 			if (cmd == 10) {
-				System.out.println("[*] Closing Server PK...");
 				server.close();
-				System.out.println("[*] Server PK closed successfully!");
 			}
 		}
 
@@ -254,45 +238,4 @@ public class No_window_server_pk {
 		}
 		return res;
 	}
-
-	public static void printArray(BigInteger[][][] F) {
-		int X = F[0].length;
-		int Y = F[0][0].length;
-		for (int m = 0; m < 3; m++) {
-			for (int y = 0; y < Y; y++) {
-				for (int x = 0; x < X; x++) {
-					System.out.print(F[m][x][y] + "  ");
-					System.out.print("\t");
-				}
-				System.out.println("");
-			}
-			System.out.println("");
-		}
-		System.out.println("");
-	}
-
-	public static void printArray(BigInteger[][] F) {
-		int X = F[0].length;
-		for (int m = 0; m < 3; m++) {
-			for (int x = 0; x < X; x++) {
-				System.out.print(F[m][x] + "  ");
-				System.out.print("\t");
-			}
-			System.out.println("");
-		}
-		System.out.println("");
-	}
-
-	public static void printArray(int[][] F) {
-		int X = F[0].length;
-		for (int m = 0; m < 3; m++) {
-			for (int x = 0; x < X; x++) {
-				System.out.print(F[m][x] + "  ");
-				System.out.print("\t");
-			}
-			System.out.println("");
-		}
-		System.out.println("");
-	}
-
 }

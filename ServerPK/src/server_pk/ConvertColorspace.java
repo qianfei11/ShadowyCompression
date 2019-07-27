@@ -8,7 +8,6 @@ import supplement.PublicKey;
 public class ConvertColorspace {
 
 	public static BigInteger[][][][] convertRGB2YUV(BigInteger[][][][] Images, PublicKey PK) {
-		System.out.println("[*] Convert RGB to YUV...");
 		BigInteger[][][][] out = new BigInteger[Images.length][3][8][8];
 		Paillier p = new Paillier();
 		for (int i = 0; i < Images.length; i++) {
@@ -33,28 +32,6 @@ public class ConvertColorspace {
 				}
 			}
 		}
-
-//		for (int i = 0; i < out.length; i++) {
-//			printArray(out[i]);
-//		}
-
-		System.out.println("[*] Finish converting!");
 		return out;
-	}
-
-	public static void printArray(BigInteger[][][] F) {
-		int X = F[0].length;
-		int Y = F[0][0].length;
-		for (int m = 0; m < 3; m++) {
-			for (int y = 0; y < Y; y++) {
-				for (int x = 0; x < X; x++) {
-					System.out.print(F[m][x][y] + "  ");
-					System.out.print("\t");
-				}
-				System.out.println("");
-			}
-			System.out.println("");
-		}
-		System.out.println("");
 	}
 }

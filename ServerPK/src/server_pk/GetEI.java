@@ -8,8 +8,6 @@ import supplement.PublicKey;
 public class GetEI {
 
 	public static BigInteger[][] calEI(BigInteger[][] EI1, BigInteger[][] EI2, PublicKey PK) {
-		System.out.println("[*] Calculate I...");
-
 		Paillier p = new Paillier();
 
 		BigInteger[][] res = new BigInteger[EI1.length][EI1[0].length];
@@ -18,16 +16,6 @@ public class GetEI {
 				res[i][j] = p.cipher_sub(PK, EI1[i][j], EI2[i][j]);
 			}
 		}
-
-//		for (int i = 0; i < res.length; i++) {
-//			for (int j = 0; j < res[0].length; j++) {
-//				System.out.print(res[i][j] + " ");
-//			}
-//			System.out.println();
-//		}
-//		System.out.println();
-		System.out.println("[*] Finish calculating!");
-
 		return res;
 	}
 }

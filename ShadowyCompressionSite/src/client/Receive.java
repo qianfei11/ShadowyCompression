@@ -12,10 +12,15 @@ import supplement.PublicKey;
 public class Receive {
 
 	static int[][][] quanArr;
+	static String client_ip;
+	static String client_port;
 
-	public static int[][][] receiveQuantificationArray(PublicKey PK, BigInteger sk, String client_ip, String client_port) throws Exception {
+	public static int[][][] receiveQuantificationArray(PublicKey PK, BigInteger sk) throws Exception {
 
 		Paillier p = new Paillier();
+
+		client_ip = "127.0.0.1";
+		client_port = "33333";
 
 		ServerSocket server = new ServerSocket(Integer.valueOf(client_port));
 
@@ -34,20 +39,15 @@ public class Receive {
 					for (int m = 0; m < 3; m++) {
 						for (int j = 0; j < 64; j++) {
 							BigInteger res = p.De(PK, sk, temp[i][m][j]);
-//							System.out.println("res = " + res);
 							if (res.compareTo(PK.n.divide(BigInteger.TWO)) == 1) {
 								res = res.subtract(PK.n);
 							}
-//							System.out.println("res_plain = " + res);
 							quanArr[i][m][j] = res.intValue();
 						}
 					}
 				}
 				System.out.println("[*] Quantification Array was received from Server SK succcessfully!");
-
-				System.out.println("[*] Close Client socket...");
 				server.close();
-				System.out.println("[*] Client socket closed!");
 				break;
 			}
 		}

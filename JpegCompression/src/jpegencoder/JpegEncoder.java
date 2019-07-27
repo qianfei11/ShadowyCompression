@@ -1,12 +1,22 @@
-package client;
+package jpegencoder;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Scanner;
 
 import supplement.BitString;
 
-public class Huffman {
+public class JpegEncoder {
+	public static int[][][][] m1;
+	public static int[][][][] m2;
+	public static int[][][] m3;
+	public static double[][][] m4;
+	public static int[][][] m5;
+	public static int sum;
 	public static String res;
 	public static byte[] finalData;
 	public static BitString[] outputBitString;
@@ -65,11 +75,222 @@ public class Huffman {
 	public static BitString[] m_CbCr_DC_Huffman_Table;
 	public static BitString[] m_CbCr_AC_Huffman_Table;
 
-	public static void CanonicalHuffman(int[][][] Images, String outputPath, int width, int height, int qs) {
-		m_width = width;
-		m_height = height;
-		quality_scale = qs;
+	public static long srcSize;
+	public static long dstSize;
+
+	public static void main(String[] args) throws IOException {
+		String imagePath = null;
+
+		Scanner in = new Scanner(System.in);
+		System.out.print("Please input imagePath: ");
+		imagePath = in.nextLine();
+		in.close();
+
+		srcSize = new File(imagePath).length();
+
+		String outputPath = imagePath.replaceAll("bmp", "jpg");
+
+		long startTime = System.currentTimeMillis();
+		quality_scale = 50;
 		initQualityTables(quality_scale);
+
+		System.out.println("[*] Start spilit bmp file...");
+		long spilitStartTime = System.currentTimeMillis();
+		m1 = spilit(imagePath);
+		long spilitEndTime = System.currentTimeMillis();
+		System.out.println("[-] Spilit takes " + (spilitEndTime - spilitStartTime) + "ms");
+
+		System.out.println("[*] Start convert color space...");
+		long convertStartTime = System.currentTimeMillis();
+		m2 = RGBtoYUV(m1);
+		long convertEndTime = System.currentTimeMillis();
+		System.out.println("[-] Convert color space takes " + (convertEndTime - convertStartTime) + "ms");
+
+		System.out.println("[*] Start DCT...");
+		long dctStartTime = System.currentTimeMillis();
+		m3 = new int[sum][3][64];
+		for (int i = 0; i < sum; i++) {
+			for (int m = 0; m < 3; m++) {
+				for (int x = 0; x < 8; x++) {
+					for (int y = 0; y < 8; y++) {
+						m3[i][m][8 * x + y] = m2[i][m][y][x];
+					}
+				}
+			}
+		}
+		m4 = new double[sum][3][64];
+		m5 = new int[sum][3][64];
+		for (int i = 0; i < sum; i++) {
+			for (int m = 0; m < 3; m++) {
+				m4[i][m] = forwardDCT(m3[i][m]);
+			}
+		}
+		long dctEndTime = System.currentTimeMillis();
+		System.out.println("[-] DCT takes " + (dctEndTime - dctStartTime) + "ms");
+
+		System.out.println("[*] Start Quantification...");
+		long quantificationStartTime = System.currentTimeMillis();
+		for (int i = 0; i < sum; i++) {
+			for (int m = 0; m < 3; m++) {
+				m5[i][m] = quantizeBlock(m4[i][m], m);
+			}
+		}
+		long quantificationEndTime = System.currentTimeMillis();
+		System.out.println("[-] Quantification Time: " + (quantificationEndTime - quantificationStartTime) + "ms");
+
+		System.out.println("[*] Start Huffman Encode...");
+		long huffmanStartTime = System.currentTimeMillis();
+		CanonicalHuffman(m5, outputPath);
+		long huffmanEndTime = System.currentTimeMillis();
+		System.out.println("[-] Huffman Encode takes " + (huffmanEndTime - huffmanStartTime) + "ms");
+
+		long endTime = System.currentTimeMillis();
+		System.out.println("[-] Total Time: " + (endTime - startTime) + "ms");
+
+		dstSize = new File(outputPath).length();
+		System.out.println("[*] " + srcSize + "B --> " + dstSize + "B");
+	}
+
+	public static int[][][][] spilit(String inputPath) {
+		// TODO Auto-generated constructor stub
+		int[][][][] Imgs = null;
+		try {
+			FileInputStream fis = new FileInputStream(inputPath);
+			BufferedInputStream bis = new BufferedInputStream(fis);
+			bis.skip(0x12);
+			byte[] b1 = new byte[4];
+			bis.read(b1);
+			m_width = byte2Int(b1);
+			byte[] b2 = new byte[4];
+			bis.read(b2);
+			m_height = byte2Int(b2);
+			System.out.println("[*] File format: " + m_width + "*" + m_height);
+			int[][][] data = new int[m_width][m_height][3];
+			int start = 0x36;
+			bis.skip(start - 0x12 - 4 - 4);
+			for (int x = 0; x < m_width; x++) {
+				for (int y = 0; y < m_height; y++) {
+					int B = bis.read();
+					int G = bis.read();
+					int R = bis.read();
+					data[m_height - x - 1][y][0] = R;
+					data[m_height - x - 1][y][1] = G;
+					data[m_height - x - 1][y][2] = B;
+				}
+			}
+			sum = m_width / 8 * m_height / 8;
+			Imgs = new int[sum][3][8][8];
+			int t = 0;
+			for (int m = 0; m < m_width / 8; m++) {
+				for (int n = 0; n < m_height / 8; n++) {
+					for (int x = 0; x < 8; x++) {
+						for (int y = 0; y < 8; y++) {
+							Imgs[t][0][y][x] = data[8 * m + x][8 * n + y][0];
+							Imgs[t][1][y][x] = data[8 * m + x][8 * n + y][1];
+							Imgs[t][2][y][x] = data[8 * m + x][8 * n + y][2];
+						}
+					}
+					t++;
+				}
+			}
+			bis.close();
+			fis.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return Imgs;
+	}
+
+	public static int byte2Int(byte[] by) {
+		int t1 = by[3] & 0xff;
+		int t2 = by[2] & 0xff;
+		int t3 = by[1] & 0xff;
+		int t4 = by[0] & 0xff;
+		int num = t1 << 24 | t2 << 16 | t3 << 8 | t4;
+		return num;
+	}
+
+	public static int[][][][] RGBtoYUV(int[][][][] Images) {
+		int[][][][] out = new int[Images.length][3][8][8];
+		for (int i = 0; i < Images.length; i++) {
+			for (int m = 0; m < 8; m++) {
+				for (int n = 0; n < 8; n++) {
+					int R = Images[i][0][m][n];
+					int G = Images[i][1][m][n];
+					int B = Images[i][2][m][n];
+					int Y = (int) (0.299f * R + 0.587f * G + 0.114f * B - 128);
+					int Cb = (int) (-0.1687f * R - 0.3313f * G + 0.5f * B);
+					int Cr = (int) (0.5f * R - 0.4187f * G - 0.0813f * B);
+					out[i][0][m][n] = Y;
+					out[i][1][m][n] = Cb;
+					out[i][2][m][n] = Cr;
+				}
+			}
+		}
+		return out;
+	}
+
+	public static double[] forwardDCT(int[] Imgs) {
+		double[] res = new double[64];
+		for (int v = 0; v < 8; v++) {
+			for (int u = 0; u < 8; u++) {
+				double temp = 0;
+				for (int x = 0; x < 8; x++) {
+					for (int y = 0; y < 8; y++) {
+						double data = Imgs[y * 8 + x];
+						temp += data * Math.cos((2 * x + 1) * u * Math.PI / 16.0f)
+								* Math.cos((2 * y + 1) * v * Math.PI / 16.0f);
+					}
+				}
+				temp *= Cfunc(u) * Cfunc(v);
+				res[ZigZag[v * 8 + u]] = temp;
+			}
+		}
+		return res;
+	}
+
+	public static double Cfunc(int x) {
+		if (x == 0) {
+			return 1 / Math.sqrt(8);
+		} else {
+			return 0.5f;
+		}
+	}
+
+	public static int[] quantizeBlock(double[] inputData, int code) {
+		int[] outputData = new int[64];
+		double temp = 0;
+		short res = 0;
+		for (int v = 0; v < 8; v++) {
+			for (int u = 0; u < 8; u++) {
+				switch (code) {
+				case 0:
+					temp = inputData[ZigZag[v * 8 + u]] / m_YTable[ZigZag[v * 8 + u]];
+					res = (short) ((short) (temp + 16384.5) - 16384);
+					outputData[ZigZag[v * 8 + u]] = res;
+					break;
+				case 1:
+					temp = inputData[ZigZag[v * 8 + u]] / m_CbCrTable[ZigZag[v * 8 + u]];
+					temp = inputData[ZigZag[v * 8 + u]] / m_YTable[ZigZag[v * 8 + u]];
+					res = (short) ((short) (temp + 16384.5) - 16384);
+					outputData[ZigZag[v * 8 + u]] = res;
+					break;
+				case 2:
+					temp = inputData[ZigZag[v * 8 + u]] / m_CbCrTable[ZigZag[v * 8 + u]];
+					temp = inputData[ZigZag[v * 8 + u]] / m_YTable[ZigZag[v * 8 + u]];
+					res = (short) ((short) (temp + 16384.5) - 16384);
+					outputData[ZigZag[v * 8 + u]] = res;
+					break;
+				default:
+					break;
+				}
+			}
+		}
+		return outputData;
+	}
+
+	public static void CanonicalHuffman(int[][][] Images, String outputPath) {
 		InitHuffmanTable();
 		finalBinString = "";
 		try {

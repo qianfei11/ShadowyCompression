@@ -5,7 +5,6 @@ import java.math.BigInteger;
 public class Spilit {
 
 	public static BigInteger[][][][] spilitBMP(BigInteger[][] I) {
-		System.out.println("[*] Spilit matrix...");
 		BigInteger[][][] temp = new BigInteger[I.length][I[0].length][3];
 		int width = I.length;
 		int height = I[0].length / 3;
@@ -32,28 +31,6 @@ public class Spilit {
 				idx++;
 			}
 		}
-
-//		for (int i = 0; i < res.length; i++) {
-//			printArray(res[i]);
-//		}
-
-		System.out.println("[*] Finish spiliting!");
 		return res;
-	}
-
-	public static void printArray(BigInteger[][][] F) {
-		int X = F[0].length;
-		int Y = F[0][0].length;
-		for (int m = 0; m < 3; m++) {
-			for (int y = 0; y < Y; y++) {
-				for (int x = 0; x < X; x++) {
-					System.out.print(F[m][x][y] + "  ");
-					System.out.print("\t");
-				}
-				System.out.println("");
-			}
-			System.out.println("");
-		}
-		System.out.println("");
 	}
 }

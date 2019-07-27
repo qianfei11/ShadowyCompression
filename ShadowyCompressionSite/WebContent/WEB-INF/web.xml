@@ -6,7 +6,6 @@
         http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
 	id="WebApp_ID" version="2.5">
 	<servlet>
-		<display-name>UploadServlet</display-name>
 		<servlet-name>UploadServlet</servlet-name>
 		<servlet-class>client.UploadServlet</servlet-class>
 	</servlet>

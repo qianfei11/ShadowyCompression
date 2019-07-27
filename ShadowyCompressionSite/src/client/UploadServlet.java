@@ -26,6 +26,8 @@ import supplement.PublicKey;
  */
 @WebServlet("/UploadServlet")
 public class UploadServlet extends HttpServlet {
+	static long srcSize;
+	static long dstSize;
 	static int width;
 	static int height;
 	static int quality_scale;
@@ -38,8 +40,6 @@ public class UploadServlet extends HttpServlet {
 	static String server_pk_port;
 	static String server_sk_ip;
 	static String server_sk_port;
-	static String client_ip;
-	static String client_port;
 
 	static PublicKey PK;
 	static BigInteger sk;
@@ -107,6 +107,7 @@ public class UploadServlet extends HttpServlet {
 					// 处理不在表单中的字段
 					if (!item.isFormField()) {
 						String fileName = new File(item.getName()).getName();
+						request.setAttribute("source", fileName);
 						filePath = uploadPath + File.separator + fileName;
 						outputPath = uploadPath + File.separator + fileName.replaceAll("bmp", "jpg");
 						request.setAttribute("result", fileName.replaceAll("bmp", "jpg"));
@@ -128,31 +129,47 @@ public class UploadServlet extends HttpServlet {
 		server_pk_port = "44444";
 		server_sk_ip = "127.0.0.1";
 		server_sk_port = "55555";
-		client_ip = "127.0.0.1";
-		client_port = "33333";
 		quality_scale = 50;
 		p = new Paillier();
-		PK = p.KeyGen(1024, 64);
+		PK = p.KeyGen(512, 64);
 		sk = p.get_sk();
 		long startTime = System.currentTimeMillis();
+		long serverTime = 0;
 		try {
 			getImage(filePath);
+			srcSize = new File(filePath).length();
+			request.setAttribute("srcSize", srcSize);
+
+			long serverStartTime = System.currentTimeMillis();
 			Upload.upload(server_pk_ip, server_pk_port, server_sk_ip, server_sk_port, PK, sk, Images);
-			quanArr = Receive.receiveQuantificationArray(PK, sk, client_ip, client_port);
+
+			quanArr = Receive.receiveQuantificationArray(PK, sk);
+			long serverEndTime = System.currentTimeMillis();
+			serverTime = serverEndTime - serverStartTime;
+			System.out.println("[*] Server takes " + serverTime + "ms");
 
 			long huffmanStartTime = System.currentTimeMillis();
-			System.out.println("[*] Start Canonical Huffman encode...");
+			System.out.println(">>> Start Canonical Huffman encode... <<<");
 			Huffman.CanonicalHuffman(quanArr, outputPath, width, height, quality_scale);
-			System.out.println("[*] Canonical Huffman encoded successfully!");
+			System.out.println(">>> Canonical Huffman encoded successfully! <<<");
 			long huffmanEndTime = System.currentTimeMillis();
-			System.out.println("[*] Canonical Huffman takes " + (huffmanEndTime - huffmanStartTime) + "ms");
+			long huffmanTime = huffmanEndTime - huffmanStartTime;
+			request.setAttribute("huffmanTime", huffmanTime);
+			System.out.println("[*] Canonical Huffman takes " + huffmanTime + "ms");
 
+			dstSize = new File(outputPath).length();
+			request.setAttribute("dstSize", dstSize);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		long endTime = System.currentTimeMillis();
-		System.out.println("[*] Total Time: " + (endTime - startTime) + "ms");
+		long totalTime = endTime - startTime;
+		request.setAttribute("totalTime", totalTime);
+		System.out.println("[*] Total Time: " + totalTime + "ms");
+		long clientTime = totalTime - serverTime;
+		request.setAttribute("clientTime", clientTime);
+		System.out.println("[*] Client takes " + clientTime + "ms");
 
 		// 跳转到 message.jsp
 		getServletContext().getRequestDispatcher("/message.jsp").forward(request, response);
@@ -169,7 +186,7 @@ public class UploadServlet extends HttpServlet {
 			byte[] b2 = new byte[4];
 			bis.read(b2);
 			height = byte2Int(b2);
-			System.out.println(width + "*" + height);
+			System.out.println("[+] File format: " + width + "*" + height);
 			int start = 0x36;
 			bis.skip(start - 0x12 - 4 - 4);
 			Images = new int[height][width * 3];

@@ -5,22 +5,28 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script src="js/nanobar.js"></script>
+<script src="js/nanobar.min.js"></script>
+<link rel="icon" href="Shadowy-Compression.jpg" type="image/x-icon" />
 <title>Shadowy Compression</title>
 </head>
 
 <body>
+	<center>
+		<h1>Shadowy Compression</h1>
 
-	<h1 style="text-align: center">Shadowy Compression</h1>
+		<div>
+			<img src="Shadowy-Compression.jpg" width="256" height="256"
+				border="4">
+		</div>
+		<br>
 
-	<div style="text-align: center">
-		<img src="Shadowy-Compression.jpg" width="256" height="256" border="4">
-	</div>
-	<br>
-
-	<form method="post" action="/ShadowyCompressionSite/UploadServlet"
-		enctype="multipart/form-data" style="text-align: center">
-		Select a bmp file: <input type="file" name="uploadFile"> <br>
-		<br> <input type="submit" value="Upload">
-	</form>
+		<form method="post" action="UploadServlet"
+			enctype="multipart/form-data">
+			Select a bmp file: <input type="file" name="uploadFile"> <br>
+			<br> <input type="submit" value="Upload">
+		</form>
+		<br>
+	</center>
 </body>
 </html>

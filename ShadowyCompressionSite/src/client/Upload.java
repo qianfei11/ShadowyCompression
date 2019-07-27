@@ -14,6 +14,7 @@ public class Upload {
 	public static Boolean upload(String server_pk_ip, String server_pk_port, String server_sk_ip, String server_sk_port,
 			PublicKey PK, BigInteger sk, int[][] I) throws IOException {
 
+		System.out.println("[*] Start create matrix...");
 		long startTime = System.currentTimeMillis();
 		EasyDispose ed = new EasyDispose(I);
 		long endTime = System.currentTimeMillis();
