@@ -15,6 +15,7 @@ import java.util.Scanner;
 
 import supplement.Paillier;
 import supplement.PublicKey;
+import supplement.Refresh;
 
 public class No_window_server_pk {
 	static BigInteger[][] EI2;
@@ -38,10 +39,9 @@ public class No_window_server_pk {
 	static int idx;
 	static int idx2;
 	static Paillier p;
+	static long total;
 
 	public static void main(String[] args) throws Exception {
-
-		System.out.println(">>> Server PK started! <<<");
 
 		server_pk_ip = "127.0.0.1";
 		server_pk_port = "44444";
@@ -59,6 +59,8 @@ public class No_window_server_pk {
 //		server_sk_port = in.nextLine();
 		in.close();
 
+		System.out.println(">>> Server PK started! <<<");
+
 		p = new Paillier();
 
 		client_ip = "127.0.0.1";
@@ -70,54 +72,60 @@ public class No_window_server_pk {
 			ObjectInputStream is = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
 			int cmd = is.readInt();
 			if (cmd == 0) {
-				System.out.println(">>> Receiving EI2 from Client... <<<");
+				System.out.println("Receiving EI2 from Client...");
 				Object obj = is.readObject();
 				EI2 = (BigInteger[][]) obj;
-				System.out.println(">>> Receiving Compeleted! <<<");
+				System.out.println("Receiving Compeleted!");
+				total = EI2.length * EI2[0].length;
+				System.out.println("[+] Total pixels: " + total);
 
-				System.out.println(">>> Receiving PK from Client... <<<");
+				System.out.println("Receiving PK from Client...");
 				obj = is.readObject();
 				PK = (PublicKey) obj;
-				System.out.println(">>> Receiving Compeleted! <<<");
+				System.out.println("Receiving Compeleted!");
 			}
 
 			if (cmd == 1) {
-				System.out.println(">>> Receiving EI1 from Server SK... <<<");
+				System.out.println("Receiving EI1 from Server SK...");
 				Object obj = is.readObject();
 				EI1 = (BigInteger[][]) obj;
-				System.out.println(">>> I1 was received from Server SK successfully! <<<");
+				System.out.println("EI1 was received from Server SK successfully!");
 
-				System.out.println(">>> Start calculate... <<<");
+				System.out.println("Start calculate...");
 				long calculateStartTime = System.currentTimeMillis();
-				EI = GetEI.calEI(EI1, EI2, PK);
+				EI = GetEI.calEI(EI1, EI2, PK, total);
 				long calculateEndTime = System.currentTimeMillis();
-				System.out.println("[*] Calculating takes " + (calculateEndTime - calculateStartTime) + "ms");
+				System.out.println("\n[*] Calculating takes " + (calculateEndTime - calculateStartTime) + "ms");
 
-				System.out.println(">>> Start spilit bmp file... <<<");
+				System.out.println("Start spilit bmp file...");
 				long spilitStartTime = System.currentTimeMillis();
 				Images = Spilit.spilitBMP(EI);
 				long spilitEndTime = System.currentTimeMillis();
 				System.out.println("[*] Spilit takes " + (spilitEndTime - spilitStartTime) + "ms");
 
-				System.out.println(">>> Start convert colorspace... <<<");
+				System.out.println("Start convert colorspace...");
 				long convertStartTime = System.currentTimeMillis();
-				YUVarr = convertTo1D(ConvertColorspace.convertRGB2YUV(Images, PK));
+				YUVarr = convertTo1D(ConvertColorspace.convertRGB2YUV(Images, PK, total));
 				long convertEndTime = System.currentTimeMillis();
-				System.out.println("[*] Convert colorspace takes " + (convertEndTime - convertStartTime) + "ms");
+				System.out.println("\n[*] Convert colorspace takes " + (convertEndTime - convertStartTime) + "ms");
 
-				System.out.println(">>> Start DCT... <<<");
+				System.out.println("Start DCT...");
 				long dctStartTime = System.currentTimeMillis();
 				dctArr = new BigInteger[YUVarr.length][3][64];
+				long dctProgressBarStartTime = System.currentTimeMillis();
+				long dctProgressBarIdx = 1;
 				for (int i = 0; i < YUVarr.length; i++) {
 					for (int m = 0; m < 3; m++) {
-						dctArr[i][m] = ForwardDCT.forwardDCT(YUVarr[i][m], PK);
+						dctArr[i][m] = ForwardDCT.forwardDCT(YUVarr[i][m], PK, dctProgressBarStartTime, total,
+								dctProgressBarIdx);
+						dctProgressBarIdx += 64;
 					}
 				}
 				long dctEndTime = System.currentTimeMillis();
-				System.out.println("[*] DCT takes " + (dctEndTime - dctStartTime) + "ms");
+				System.out.println("\n[*] DCT takes " + (dctEndTime - dctStartTime) + "ms");
 
 				long quantificationStartTime = System.currentTimeMillis();
-				System.out.println(">>> Sending DCT Array to Server SK and start Quantification... <<<");
+				System.out.println("Sending DCT Array to Server SK and start Quantification...");
 				int quality_scale = 50;
 				Quantification.initQualityTables(quality_scale);
 
@@ -133,20 +141,44 @@ public class No_window_server_pk {
 				temp_os.flush();
 
 				quanArr = new BigInteger[dctArr.length][3][64];
-//				System.out.println("[+] Delay time = " + (dctArr.length * 3 * 64 * 5) + "ms");
 				Random r = new Random();
 				BigInteger rData = null;
 
+				long quanlificationProgressBarStartTime = System.currentTimeMillis();
+				long quanlificationProgressBarIdx = 1;
 				for (int i = 0; i < dctArr.length; i++) {
 					for (int m = 0; m < 3; m++) {
 						for (int j = 0; j < 64; j++) {
-							Thread.sleep(5);
+							if (i == 0 && m == 0 && j == 0) {
+								Thread.sleep(50);
+							}
+//							Thread.sleep(50);
+							Refresh.printProgress(quanlificationProgressBarStartTime, total,
+									quanlificationProgressBarIdx);
+							quanlificationProgressBarIdx += 1;
+
+//							System.out.print("Matrix " + i);
+//							switch (m) {
+//							case 0:
+//								System.out.print(" Luminosity");
+//								break;
+//							case 1:
+//								System.out.print(" Chrominance");
+//								break;
+//							case 2:
+//								System.out.print(" Chrominance");
+//								break;
+//							default:
+//								break;
+//							}
+//							System.out.print(" Element " + j);
 
 							int rd = r.nextInt(Integer.MAX_VALUE);
 
 							BigInteger src = dctArr[i][m][j];
 							rData = p.cipher_mul(PK, src, new BigInteger(String.valueOf(rd)));
 
+//							System.out.print(" " + rData);
 							bw.write(rData.toString());
 							bw.newLine();
 							bw.flush();
@@ -173,6 +205,7 @@ public class No_window_server_pk {
 								}
 
 								flag = br.readLine();
+//								System.out.println("flag: " + flag);
 
 								if (flag.equals("yes")) {
 									res = new BigInteger(br.readLine());
@@ -183,6 +216,9 @@ public class No_window_server_pk {
 								}
 
 							}
+
+//							System.out.print(" " + res);
+//							System.out.print(" " + remain);
 
 							remain = remain.divide(new BigInteger("1000000000000"));
 							remain = remain.divide(new BigInteger(String.valueOf(rd)));
@@ -196,16 +232,16 @@ public class No_window_server_pk {
 							}
 
 							quanArr[i][m][j] = res;
+//							System.out.println(" ==> " + res);
 						}
 					}
 				}
 				temp.close();
 				long quantificationEndTime = System.currentTimeMillis();
 				System.out.println(
-						"[*] Quantification takes " + (quantificationEndTime - quantificationStartTime) + "ms");
+						"\n[*] Quantification takes " + (quantificationEndTime - quantificationStartTime) + "ms");
 
-				Thread.sleep(100);
-				System.out.println(">>> Sending Quantification Array and some infos to Client... <<<");
+				System.out.println("Sending Quantification Array and some infos to Client...");
 				temp = new Socket(client_ip, Integer.valueOf(client_port));
 				temp_os = new ObjectOutputStream(temp.getOutputStream());
 				temp_os.writeInt(0);
@@ -215,7 +251,7 @@ public class No_window_server_pk {
 				temp_os.writeObject(quanArr);
 				temp_os.flush();
 				temp.close();
-				System.out.println(">>> Quantification Array and some infos was sent to Client successfully! <<<");
+				System.out.println("Quantification Array and some infos was sent to Client successfully!");
 			}
 
 			if (cmd == 10) {

@@ -2,14 +2,17 @@ package compression;
 
 import java.math.BigInteger;
 
+import utils.Refresh;
 import utils.Paillier;
 import utils.PublicKey;
 
 public class ConvertColorspace {
 
-	public static BigInteger[][][][] convertRGB2YUV(BigInteger[][][][] Images, PublicKey PK) {
+	public static BigInteger[][][][] convertRGB2YUV(BigInteger[][][][] Images, PublicKey PK, long total) {
 		BigInteger[][][][] out = new BigInteger[Images.length][3][8][8];
 		Paillier p = new Paillier();
+		long startTime = System.currentTimeMillis();
+		long idx = 1;
 		for (int i = 0; i < Images.length; i++) {
 			for (int m = 0; m < 8; m++) {
 				for (int n = 0; n < 8; n++) {
@@ -29,6 +32,12 @@ public class ConvertColorspace {
 					out[i][0][m][n] = Y;
 					out[i][1][m][n] = Cb;
 					out[i][2][m][n] = Cr;
+					Refresh.printProgress(startTime, total, idx);
+					idx += 1;
+					Refresh.printProgress(startTime, total, idx);
+					idx += 1;
+					Refresh.printProgress(startTime, total, idx);
+					idx += 1;
 				}
 			}
 		}

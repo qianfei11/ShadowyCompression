@@ -131,7 +131,7 @@ public class UploadServlet extends HttpServlet {
 		server_sk_port = "55555";
 		quality_scale = 50;
 		p = new Paillier();
-		PK = p.KeyGen(512, 64);
+		PK = p.KeyGen(512, 10);
 		sk = p.get_sk();
 		long startTime = System.currentTimeMillis();
 		long serverTime = 0;
@@ -149,9 +149,9 @@ public class UploadServlet extends HttpServlet {
 			System.out.println("[*] Server takes " + serverTime + "ms");
 
 			long huffmanStartTime = System.currentTimeMillis();
-			System.out.println(">>> Start Canonical Huffman encode... <<<");
+			System.out.println("Start Canonical Huffman encode...");
 			Huffman.CanonicalHuffman(quanArr, outputPath, width, height, quality_scale);
-			System.out.println(">>> Canonical Huffman encoded successfully! <<<");
+			System.out.println("Canonical Huffman encoded successfully!");
 			long huffmanEndTime = System.currentTimeMillis();
 			long huffmanTime = huffmanEndTime - huffmanStartTime;
 			request.setAttribute("huffmanTime", huffmanTime);

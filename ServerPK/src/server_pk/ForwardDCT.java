@@ -4,6 +4,7 @@ import java.math.BigInteger;
 
 import supplement.Paillier;
 import supplement.PublicKey;
+import supplement.Refresh;
 
 public class ForwardDCT {
 
@@ -11,9 +12,10 @@ public class ForwardDCT {
 			11, 18, 24, 31, 40, 44, 53, 10, 19, 23, 32, 39, 45, 52, 54, 20, 22, 33, 38, 46, 51, 55, 60, 21, 34, 37, 47,
 			50, 56, 59, 61, 35, 36, 48, 49, 57, 58, 62, 63 };
 
-	public static BigInteger[] forwardDCT(BigInteger[] Imgs, PublicKey PK) {
+	public static BigInteger[] forwardDCT(BigInteger[] Imgs, PublicKey PK, long startTime, long total, long idxBase) {
 		BigInteger[] res = new BigInteger[64];
 		Paillier p = new Paillier();
+		int idx = 0;
 		for (int v = 0; v < 8; v++) {
 			for (int u = 0; u < 8; u++) {
 				BigInteger temp = p.En(PK, BigInteger.ZERO);
@@ -29,6 +31,8 @@ public class ForwardDCT {
 				int t = (int) (Cfunc(u) * Cfunc(v) * 10000);
 				temp = p.cipher_mul(PK, temp, new BigInteger(String.valueOf(t)));
 				res[ZigZag[v * 8 + u]] = temp;
+				Refresh.printProgress(startTime, total, idxBase + idx);
+				idx += 1;
 			}
 		}
 		return res;

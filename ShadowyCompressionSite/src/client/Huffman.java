@@ -124,6 +124,7 @@ public class Huffman {
 			bos.flush();
 			bos.close();
 			fos.close();
+			System.out.println("[+] File saved at " + outputPath);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

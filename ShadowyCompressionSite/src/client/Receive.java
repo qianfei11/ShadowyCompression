@@ -35,11 +35,24 @@ public class Receive {
 				quanArr = new int[len][3][64];
 				obj = is.readObject();
 				BigInteger[][][] temp = (BigInteger[][][]) obj;
+				
+//				for(int i = 0; i < len; i++) {
+//					for (int j = 0; j < 3; j++) {
+//						for (int k = 0; k < 64; k++ ) {
+//							System.out.print(temp[i][j][k] + " ");
+//						}
+//						System.out.println();
+//					}
+//					System.out.println();
+//				}
+
+				BigInteger val = new BigInteger("1267650600228229401496703205376"); // 2**100
+
 				for (int i = 0; i < temp.length; i++) {
 					for (int m = 0; m < 3; m++) {
 						for (int j = 0; j < 64; j++) {
 							BigInteger res = p.De(PK, sk, temp[i][m][j]);
-							if (res.compareTo(PK.n.divide(BigInteger.TWO)) == 1) {
+							if (res.compareTo(val) == 1) {
 								res = res.subtract(PK.n);
 							}
 							quanArr[i][m][j] = res.intValue();

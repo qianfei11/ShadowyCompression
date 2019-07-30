@@ -12,6 +12,7 @@ import compression.ForwardDCT;
 import compression.Huffman;
 import compression.Quantification;
 import compression.Spilit;
+import utils.Refresh;
 import utils.EasyDispose;
 import utils.EncryptArray;
 import utils.GetEI;
@@ -40,6 +41,8 @@ public class Client {
 	static BigInteger sk;
 	static Paillier p;
 
+	static long total;
+
 	public static void main(String[] args) {
 		System.out.println(
 				"███████╗██╗  ██╗ █████╗ ██████╗  ██████╗ ██╗    ██╗██╗   ██╗ ██████╗ ██████╗ ███╗   ███╗██████╗ ██████╗ ███████╗███████╗███████╗██╗ ██████╗ ███╗   ██╗");
@@ -66,7 +69,7 @@ public class Client {
 		quality_scale = 50;
 
 		p = new Paillier();
-		PK = p.KeyGen(1024, 100);
+		PK = p.KeyGen(1024, 128);
 		sk = p.get_sk();
 
 		long startTime = System.currentTimeMillis();
@@ -74,13 +77,13 @@ public class Client {
 		try {
 			getImage(imagePath);
 
-			System.out.println("[*] Start create matrix...");
+			System.out.println("Start create matrix...");
 			long createStartTime = System.currentTimeMillis();
 			EasyDispose ed = new EasyDispose(I);
 			long createEndTime = System.currentTimeMillis();
-			System.out.println("[-] Create matrix takes " + (createEndTime - createStartTime) + "ms");
+			System.out.println("[+] Create matrix takes " + (createEndTime - createStartTime) + "ms");
 
-			System.out.println("[*] Start calculate EI...");
+			System.out.println("Start calculate EI...");
 			long calculateStartTime = System.currentTimeMillis();
 			I1 = new BigInteger[ed.I1.length][ed.I1[0].length];
 			I2 = new BigInteger[ed.I2.length][ed.I2[0].length];
@@ -98,35 +101,41 @@ public class Client {
 			EI2 = new BigInteger[I2.length][I2[0].length];
 			EI1 = EncryptArray.encrypt(PK, I1);
 			EI2 = EncryptArray.encrypt(PK, I2);
-			EI = GetEI.calEI(EI1, EI2, PK);
+			total = EI1.length * EI1[0].length;
+			EI = GetEI.calEI(EI1, EI2, PK, total);
 			long calculateEndTime = System.currentTimeMillis();
-			System.out.println("[-] Calculating takes " + (calculateEndTime - calculateStartTime) + "ms");
+			System.out.println("\n[+] Calculating takes " + (calculateEndTime - calculateStartTime) + "ms");
 
-			System.out.println("[*] Start spilit bmp file...");
+			System.out.println("Start spilit bmp file...");
 			long spilitStartTime = System.currentTimeMillis();
 			Images = Spilit.spilitBMP(EI);
 			long spilitEndTime = System.currentTimeMillis();
-			System.out.println("[-] Spilit takes " + (spilitEndTime - spilitStartTime) + "ms");
+			System.out.println("[+] Spilit takes " + (spilitEndTime - spilitStartTime) + "ms");
 
 			long convertStartTime = System.currentTimeMillis();
-			YUVarr = convertTo1D(ConvertColorspace.convertRGB2YUV(Images, PK));
+			YUVarr = convertTo1D(ConvertColorspace.convertRGB2YUV(Images, PK, total));
 			long convertEndTime = System.currentTimeMillis();
-			System.out.println("[*] Convert colorspace takes " + (convertEndTime - convertStartTime) + "ms");
+			System.out.println("\n[+] Convert colorspace takes " + (convertEndTime - convertStartTime) + "ms");
 
 			long dctStartTime = System.currentTimeMillis();
 			System.out.println("[*] Start DCT...");
+			long dctProgressBarStartTime = System.currentTimeMillis();
+			long dctProgressBarIdx = 1;
 			dctArr = new BigInteger[YUVarr.length][3][64];
-			System.out.println("[+] n = " + PK.n);
 			for (int i = 0; i < YUVarr.length; i++) {
 				for (int m = 0; m < 3; m++) {
-					dctArr[i][m] = ForwardDCT.forwardDCT(YUVarr[i][m], PK);
+					dctArr[i][m] = ForwardDCT.forwardDCT(YUVarr[i][m], PK, dctProgressBarStartTime, total,
+							dctProgressBarIdx);
+					dctProgressBarIdx += 64;
 				}
 			}
 			long dctEndTime = System.currentTimeMillis();
-			System.out.println("[-] DCT takes " + (dctEndTime - dctStartTime) + "ms");
+			System.out.println("\n[+] DCT takes " + (dctEndTime - dctStartTime) + "ms");
 
-			System.out.println("[*] Start Quanlification...");
+			System.out.println("Start Quanlification...");
 			long quanlificationStartTime = System.currentTimeMillis();
+			long quanlificationProgressBarStartTime = System.currentTimeMillis();
+			long quanlificationProgressBarIdx = 1;
 			quanArr = new int[dctArr.length][3][64];
 			quality_scale = 50;
 			Quantification.initQualityTables(quality_scale);
@@ -136,6 +145,8 @@ public class Client {
 			for (int i = 0; i < dctArr.length; i++) {
 				for (int m = 0; m < 3; m++) {
 					for (int j = 0; j < 64; j++) {
+						Refresh.printProgress(quanlificationProgressBarStartTime, total, quanlificationProgressBarIdx);
+						quanlificationProgressBarIdx += 1;
 						int rd = r.nextInt(Integer.MAX_VALUE);
 						BigInteger src = dctArr[i][m][j];
 						rData = p.cipher_mul(PK, src, new BigInteger(String.valueOf(rd)));
@@ -240,13 +251,13 @@ public class Client {
 				}
 			}
 			long quanlificationEndTime = System.currentTimeMillis();
-			System.out.println("[-] Quanlification takes " + (quanlificationEndTime - quanlificationStartTime) + "ms");
+			System.out.println("\n[+] Quanlification takes " + (quanlificationEndTime - quanlificationStartTime) + "ms");
 
 			long huffmanStartTime = System.currentTimeMillis();
-			System.out.println("[*] Start Canonical Huffman Encode...");
+			System.out.println("Start Canonical Huffman Encode...");
 			Huffman.CanonicalHuffman(quanArr, outputPath, width, height, quality_scale);
 			long huffmanEndTime = System.currentTimeMillis();
-			System.out.println("[-] Canonical Huffman takes " + (huffmanEndTime - huffmanStartTime) + "ms");
+			System.out.println("[+] Canonical Huffman takes " + (huffmanEndTime - huffmanStartTime) + "ms");
 
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -254,7 +265,7 @@ public class Client {
 		}
 
 		long endTime = System.currentTimeMillis();
-		System.out.println("[-] Total Time: " + (endTime - startTime) + "ms");
+		System.out.println("[*] Total Time: " + (endTime - startTime) + "ms");
 	}
 
 	public static void getImage(String inputPath) {

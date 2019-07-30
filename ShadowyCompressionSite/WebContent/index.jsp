@@ -5,8 +5,6 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<script src="js/nanobar.js"></script>
-<script src="js/nanobar.min.js"></script>
 <link rel="icon" href="Shadowy-Compression.jpg" type="image/x-icon" />
 <title>Shadowy Compression</title>
 </head>

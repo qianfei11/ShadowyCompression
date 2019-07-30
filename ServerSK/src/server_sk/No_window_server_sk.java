@@ -10,7 +10,7 @@ import java.io.OutputStreamWriter;
 import java.math.BigInteger;
 import java.net.ServerSocket;
 import java.net.Socket;
-//import java.util.Scanner;
+import java.util.Scanner;
 
 import supplement.Paillier;
 import supplement.PublicKey;
@@ -35,7 +35,7 @@ public class No_window_server_sk {
 		server_sk_ip = "127.0.0.1";
 		server_sk_port = "55555";
 
-//		Scanner in = new Scanner(System.in);
+		Scanner in = new Scanner(System.in);
 //		System.out.println("Please input Server PK's ip(default 127.0.0.1):");
 //		server_pk_ip = in.nextLine();
 //		System.out.println("Please input Server PK's port(default 44444):");
@@ -44,7 +44,9 @@ public class No_window_server_sk {
 //		server_sk_ip = in.nextLine();
 //		System.out.println("Please input Server SK's port(default 55555):");
 //		server_sk_port = in.nextLine();
-//		in.close();
+		in.close();
+
+		System.out.println(">>> Server SK started! <<<");
 
 		idx = 0;
 		p = new Paillier();
@@ -56,19 +58,19 @@ public class No_window_server_sk {
 			ObjectInputStream is = new ObjectInputStream(new BufferedInputStream(s.getInputStream()));
 			int cmd = is.readInt();
 			if (cmd == 0) {
-				System.out.println("[*] Receiving EI1 from Client...");
+				System.out.println("Receiving EI1 from Client...");
 				Object obj = is.readObject();
 				EI1 = (BigInteger[][]) obj;
-				System.out.println("[*] Receiving Compeleted!");
+				System.out.println("Receiving Compeleted!");
 
-				System.out.println("[*] Receiving PK and SK from Client...");
+				System.out.println("Receiving PK and SK from Client...");
 				obj = is.readObject();
 				PK = (PublicKey) obj;
 				obj = is.readObject();
 				sk = (BigInteger) obj;
-				System.out.println("[*] Receiving Compeleted!");
+				System.out.println("Receiving Compeleted");
 
-				System.out.println("[*] Sending EI1 to Server PK...");
+				System.out.println("Sending EI1 to Server PK...");
 				Socket temp = new Socket(server_pk_ip, Integer.valueOf(server_pk_port));
 				ObjectOutputStream temp_os = new ObjectOutputStream(temp.getOutputStream());
 				temp_os.writeInt(1);
@@ -76,18 +78,16 @@ public class No_window_server_sk {
 				temp_os.writeObject(EI1);
 				temp_os.flush();
 				temp.close();
-				System.out.println("[*] EI1 was sent to Server PK successfully!");
+				System.out.println("EI1 was sent to Server PK successfully!");
 			}
 
 			if (cmd == 1) {
-				System.out.println("[*] Receiving DCT Array from Server PK and start Quanlification...");
+				System.out.println("Receiving DCT Array from Server PK and start Quanlification...");
 
 				BufferedReader br = new BufferedReader(new InputStreamReader(s.getInputStream()));
 				BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
 
 				BigInteger val = new BigInteger("1267650600228229401496703205376"); // 2**100
-
-				System.out.println("[+] n = " + PK.n);
 
 				Object obj = is.readObject();
 				int len = (int) obj;
@@ -97,6 +97,8 @@ public class No_window_server_sk {
 						for (int j = 0; j < 64; j++) {
 
 							BigInteger rex = new BigInteger(br.readLine());
+//							System.out.println("Received: " + rex);
+
 							BigInteger rx = p.De(PK, sk, rex);
 							rx = rx.divide(new BigInteger("1000000000000"));
 
@@ -213,6 +215,7 @@ public class No_window_server_sk {
 										bw.write(res.toString());
 										bw.newLine();
 										bw.flush();
+//										System.out.println("Found!");
 										break;
 									} else {
 										bw.write("no");
@@ -226,61 +229,22 @@ public class No_window_server_sk {
 							if (remain.compareTo(val) == 1) {
 								remain = remain.subtract(PK.n);
 							}
+//							System.out.println("Result: " + remain);
+
 							bw.write(remain.toString());
 							bw.newLine();
 							bw.flush();
 						}
 					}
 				}
-				System.out.println("[*] compeleted!");
-
+				System.out.println("Quanlification compeleted!");
 			}
 
 			if (cmd == 10) {
-				System.out.println("[*] Closing Server SK...");
+				System.out.println("Closing Server SK...");
 				server.close();
-				System.out.println("[*] Server SK closed successfully!");
+				System.out.println("Server SK closed successfully!");
 			}
 		}
-	}
-
-	public static void printArray(BigInteger[][][] F) {
-		int X = F[0].length;
-		int Y = F[0][0].length;
-		for (int m = 0; m < 3; m++) {
-			for (int y = 0; y < Y; y++) {
-				for (int x = 0; x < X; x++) {
-					System.out.print(F[m][x][y] + "  ");
-					System.out.print("\t");
-				}
-				System.out.println("");
-			}
-			System.out.println("");
-		}
-		System.out.println("");
-	}
-
-	public static void printArray(BigInteger[][] F) {
-		int X = F[0].length;
-		for (int m = 0; m < 3; m++) {
-			for (int x = 0; x < X; x++) {
-				System.out.print(F[m][x] + "  ");
-				System.out.print("\t");
-			}
-			System.out.println("");
-		}
-		System.out.println("");
-	}
-
-	public static void printArray(int[][] F) {
-		int X = F[0].length;
-		for (int m = 0; m < 3; m++) {
-			for (int x = 0; x < X; x++) {
-				System.out.print(F[m][x] + "  ");
-				System.out.print("\t");
-			}
-			System.out.println("");
-		}
-		System.out.println("");
 	}
 }
