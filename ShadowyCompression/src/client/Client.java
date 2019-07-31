@@ -35,6 +35,7 @@ public class Client {
 	static BigInteger[][][][] Images;
 	static BigInteger[][][] YUVarr;
 	static BigInteger[][][] dctArr;
+	static BigInteger[][][] bigQuanArr;
 	static int[][][] quanArr;
 
 	static PublicKey PK;
@@ -83,8 +84,6 @@ public class Client {
 			long createEndTime = System.currentTimeMillis();
 			System.out.println("[+] Create matrix takes " + (createEndTime - createStartTime) + "ms");
 
-			System.out.println("Start calculate EI...");
-			long calculateStartTime = System.currentTimeMillis();
 			I1 = new BigInteger[ed.I1.length][ed.I1[0].length];
 			I2 = new BigInteger[ed.I2.length][ed.I2[0].length];
 			for (int i = 0; i < I1.length; i++) {
@@ -97,11 +96,22 @@ public class Client {
 					I2[i][j] = new BigInteger(String.valueOf(ed.I2[i][j]));
 				}
 			}
+			total = I1.length * I1[0].length;
 			EI1 = new BigInteger[I1.length][I1[0].length];
 			EI2 = new BigInteger[I2.length][I2[0].length];
-			EI1 = EncryptArray.encrypt(PK, I1);
-			EI2 = EncryptArray.encrypt(PK, I2);
-			total = EI1.length * EI1[0].length;
+			System.out.println("Start encrypt I1...");
+			long encrypt1StartTime = System.currentTimeMillis();
+			EI1 = EncryptArray.encrypt(PK, I1, total);
+			long encrypt1EndTime = System.currentTimeMillis();
+			System.out.println("\n[+] Encrypt I1 takes " + (encrypt1EndTime - encrypt1StartTime) + "ms");
+			System.out.println("Start encrypt I2...");
+			long encrypt2StartTime = System.currentTimeMillis();
+			EI2 = EncryptArray.encrypt(PK, I2, total);
+			long encrypt2EndTime = System.currentTimeMillis();
+			System.out.println("\n[+] Encrypt I2 takes " + (encrypt2EndTime - encrypt2StartTime) + "ms");
+
+			System.out.println("Start calculate EI...");
+			long calculateStartTime = System.currentTimeMillis();
 			EI = GetEI.calEI(EI1, EI2, PK, total);
 			long calculateEndTime = System.currentTimeMillis();
 			System.out.println("\n[+] Calculating takes " + (calculateEndTime - calculateStartTime) + "ms");
@@ -136,7 +146,7 @@ public class Client {
 			long quanlificationStartTime = System.currentTimeMillis();
 			long quanlificationProgressBarStartTime = System.currentTimeMillis();
 			long quanlificationProgressBarIdx = 1;
-			quanArr = new int[dctArr.length][3][64];
+			bigQuanArr = new BigInteger[dctArr.length][3][64];
 			quality_scale = 50;
 			Quantification.initQualityTables(quality_scale);
 			Random r = new Random();
@@ -242,16 +252,35 @@ public class Client {
 						if (sig) {
 							res = p.cipher_mul(PK, res, new BigInteger("-1"));
 						}
-						res = p.De(PK, sk, res);
-						if (res.compareTo(PK.n.divide(BigInteger.TWO)) == 1) {
-							res = res.subtract(PK.n);
-						}
-						quanArr[i][m][j] = res.intValue();
+						bigQuanArr[i][m][j] = res;
 					}
 				}
 			}
 			long quanlificationEndTime = System.currentTimeMillis();
-			System.out.println("\n[+] Quanlification takes " + (quanlificationEndTime - quanlificationStartTime) + "ms");
+			System.out
+					.println("\n[+] Quanlification takes " + (quanlificationEndTime - quanlificationStartTime) + "ms");
+
+			System.out.println("Start decrypt matrix...");
+			long decryptStartTime = System.currentTimeMillis();
+			long decryptProgressBarStartTime = System.currentTimeMillis();
+			long decryptProgressBarIdx = 1;
+			quanArr = new int[dctArr.length][3][64];
+			BigInteger temp = null;
+			for (int i = 0; i < quanArr.length; i++) {
+				for (int j = 0; j < 3; j++) {
+					for (int k = 0; k < 64; k++) {
+						temp = p.De(PK, sk, bigQuanArr[i][j][k]);
+						if (temp.compareTo(PK.n.divide(BigInteger.TWO)) == 1) {
+							temp = temp.subtract(PK.n);
+						}
+						quanArr[i][j][k] = temp.intValue();
+						Refresh.printProgress(decryptProgressBarStartTime, total, decryptProgressBarIdx);
+						decryptProgressBarIdx += 1;
+					}
+				}
+			}
+			long decryptEndTime = System.currentTimeMillis();
+			System.out.println("\n[+] Decrypt matrix takes " + (decryptEndTime - decryptStartTime) + "ms");
 
 			long huffmanStartTime = System.currentTimeMillis();
 			System.out.println("Start Canonical Huffman Encode...");

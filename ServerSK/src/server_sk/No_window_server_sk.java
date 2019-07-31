@@ -14,6 +14,7 @@ import java.util.Scanner;
 
 import supplement.Paillier;
 import supplement.PublicKey;
+import supplement.Refresh;
 
 public class No_window_server_sk {
 	static PublicKey PK;
@@ -27,6 +28,7 @@ public class No_window_server_sk {
 	static String server_pk_ip;
 	static int idx;
 	static Paillier p;
+	static long total;
 
 	public static void main(String[] args) throws Exception {
 
@@ -61,6 +63,7 @@ public class No_window_server_sk {
 				System.out.println("Receiving EI1 from Client...");
 				Object obj = is.readObject();
 				EI1 = (BigInteger[][]) obj;
+				total = EI1.length * EI1[0].length;
 				System.out.println("Receiving Compeleted!");
 
 				System.out.println("Receiving PK and SK from Client...");
@@ -68,7 +71,7 @@ public class No_window_server_sk {
 				PK = (PublicKey) obj;
 				obj = is.readObject();
 				sk = (BigInteger) obj;
-				System.out.println("Receiving Compeleted");
+				System.out.println("Receiving Compeleted!");
 
 				System.out.println("Sending EI1 to Server PK...");
 				Socket temp = new Socket(server_pk_ip, Integer.valueOf(server_pk_port));
@@ -92,9 +95,14 @@ public class No_window_server_sk {
 				Object obj = is.readObject();
 				int len = (int) obj;
 				dctArr = new BigInteger[len][3][64];
+				long quanlificationProgressBarStartTime = System.currentTimeMillis();
+				long quanlificationProgressBarIdx = 1;
 				for (int i = 0; i < dctArr.length; i++) {
 					for (int m = 0; m < 3; m++) {
 						for (int j = 0; j < 64; j++) {
+							Refresh.printProgress(quanlificationProgressBarStartTime, total,
+									quanlificationProgressBarIdx);
+							quanlificationProgressBarIdx += 1;
 
 							BigInteger rex = new BigInteger(br.readLine());
 //							System.out.println("Received: " + rex);
@@ -237,7 +245,7 @@ public class No_window_server_sk {
 						}
 					}
 				}
-				System.out.println("Quanlification compeleted!");
+				System.out.println("\nQuanlification compeleted!");
 			}
 
 			if (cmd == 10) {
