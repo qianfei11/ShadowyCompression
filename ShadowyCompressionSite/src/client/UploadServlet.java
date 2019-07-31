@@ -131,7 +131,7 @@ public class UploadServlet extends HttpServlet {
 		server_sk_port = "55555";
 		quality_scale = 50;
 		p = new Paillier();
-		PK = p.KeyGen(512, 10);
+		PK = p.KeyGen(1024, 128);
 		sk = p.get_sk();
 		long startTime = System.currentTimeMillis();
 		long serverTime = 0;

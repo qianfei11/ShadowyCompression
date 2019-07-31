@@ -36,14 +36,14 @@ public class No_window_server_sk {
 		server_sk_port = "55555";
 
 		Scanner in = new Scanner(System.in);
-//		System.out.println("Please input Server PK's ip(default 127.0.0.1):");
-//		server_pk_ip = in.nextLine();
-//		System.out.println("Please input Server PK's port(default 44444):");
-//		server_pk_port = in.nextLine();
-//		System.out.println("Please input Server SK's ip(default 127.0.0.1):");
-//		server_sk_ip = in.nextLine();
-//		System.out.println("Please input Server SK's port(default 55555):");
-//		server_sk_port = in.nextLine();
+		System.out.println("Please input Server PK's ip(default 127.0.0.1):");
+		server_pk_ip = in.nextLine();
+		System.out.println("Please input Server PK's port(default 44444):");
+		server_pk_port = in.nextLine();
+		System.out.println("Please input Server SK's ip(default 127.0.0.1):");
+		server_sk_ip = in.nextLine();
+		System.out.println("Please input Server SK's port(default 55555):");
+		server_sk_port = in.nextLine();
 		in.close();
 
 		System.out.println(">>> Server SK started! <<<");
