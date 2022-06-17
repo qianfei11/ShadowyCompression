@@ -1,8 +1,8 @@
 # ShadowyCompression
 
-> My work of Ciscn 2019.
+> My work of CISCN 2019.
 
-JPEG Image Compression Service using Part Homomorphic Encryption.
+A JPEG Image Compression Service using Part Homomorphic Encryption.
 
 # Reference
 
